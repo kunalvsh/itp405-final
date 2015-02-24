@@ -19,6 +19,7 @@ class DvdController extends Controller
 			'ratings' => $ratings
 			]);
 	}
+
 	public function results(Request $request)
 	{
 		$query = new Dvd();
@@ -44,4 +45,36 @@ class DvdController extends Controller
 					'dvds'  => $dvds
 			    	]);
 	}
+
+	public function review($id)
+	{
+		$dvd = Dvd::getDvdWithId($id);
+		$reviews = Dvd::findReviews($id);
+
+		$data = [ "dvd"     => $dvd,
+				  "reviews" => $reviews ];
+
+		return view('review', $data);
+	}
+
+	public function insertReview(Request $request)
+	{
+		$validation = Dvd::validate($request->all());
+
+		if ($validation->passes()) {
+			Dvd::insertReview([
+				'title' => $request->input('title'),
+				'description' => $request->input('description'),
+				'dvd_id' => $request->input('dvd_id'),
+				'rating' => $request->input('rating')
+				]);
+
+			return redirect()->back()->with('success', 'Your review successfully added.');
+
+		}
+
+		return redirect()->back()->withErrors($validation);
+	}
+
+
 }
