@@ -3,6 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dvd;
+use App\Models\Dvd2;
+use App\Models\Rating;
+use App\Models\Sound;
+use App\Models\Label;
+use App\Models\Genre;
+use App\Models\Format;
+
 use Illuminate\Http\Request;
 
 
@@ -11,8 +18,8 @@ class DvdController extends Controller
 	public function search()
 	{
 
-		$genres = (new Dvd())->getGenres();
-		$ratings = (new Dvd())->getRatings();
+		$genres = (new Dvd2())->getGenres();
+		$ratings = (new Dvd2())->getRatings();
 
 		return view('search', [
 			'genres' => $genres, 
@@ -22,7 +29,7 @@ class DvdController extends Controller
 
 	public function results(Request $request)
 	{
-		$query = new Dvd();
+		$query = new Dvd2();
 
 
 		if (empty($request->all()))
@@ -48,8 +55,8 @@ class DvdController extends Controller
 
 	public function review($id)
 	{
-		$dvd = Dvd::getDvdWithId($id);
-		$reviews = Dvd::findReviews($id);
+		$dvd = Dvd2::getDvdWithId($id);
+		$reviews = Dvd2::findReviews($id);
 
 		$data = [ "dvd"     => $dvd,
 				  "reviews" => $reviews ];
@@ -59,10 +66,10 @@ class DvdController extends Controller
 
 	public function insertReview(Request $request)
 	{
-		$validation = Dvd::validate($request->all());
+		$validation = Dvd2::validate($request->all());
 
 		if ($validation->passes()) {
-			Dvd::insertReview([
+			Dvd2::insertReview([
 				'title' => $request->input('title'),
 				'description' => $request->input('description'),
 				'dvd_id' => $request->input('dvd_id'),
@@ -74,6 +81,54 @@ class DvdController extends Controller
 		}
 
 		return redirect()->back()->withErrors($validation);
+	}
+
+	public function create(){
+
+		$sounds = Sound::all();
+		$labels = Label::all();
+		$genres = Genre::all();
+		$ratings = Rating::all();
+		$formats = Format::all();
+
+
+		return view('create', [
+			'labels' => $labels,
+			'sounds' => $sounds,
+			'genres' => $genres,
+			'ratings' => $ratings,
+			'formats' => $formats
+		]);
+	}
+
+	public function insertDvd(Request $request) {
+
+		$validation = \Validator::make($request->all(), [
+				'title' => 'required',
+				'genre' => 'required'
+		]);
+
+		if ($validation->passes()) {
+
+			$dvd = new Dvd();
+
+			$dvd->title = $request->input('title');
+			$dvd->label_id = $request->input('label');
+			$dvd->sound_id = $request->input('sound');
+			$dvd->genre_id = $request->input('genre');
+			$dvd->rating_id = $request->input('rating');
+			$dvd->format_id = $request->input('format');
+			$dvd->save();
+
+			return redirect('/dvds/create')->with('success', 'Your dvd was successfully created!');
+
+		}
+
+		else {
+			return redirect('/dvds/create')->withInput()->withErrors($validation);
+		}
+
+
 	}
 
 

@@ -8,7 +8,8 @@
     </head>
     <body>
 
-        <div class="container">
+
+        <div class="container col-md-8">
             <div class="content">
                 <div class="dvd-container">
                     <h1 class="text-center">Search for a Movie</h1>
@@ -47,5 +48,14 @@
                 </div>
             </div>
         </div>
+
+        <div class = " container col-md-4" >
+                    <h2>Genres</h2>
+                    <?php foreach($genres as $genre) : ?>
+                        <br>
+                        <a href="/genres/<?php echo $genre->genre_name ?>/dvds"><?php echo $genre->genre_name ?></a>
+                    <?php endforeach ?>
+        </div>
+
     </body>
 </html>
