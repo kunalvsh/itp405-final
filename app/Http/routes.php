@@ -2,11 +2,13 @@
 
 use App\Models\DvdE;
 use App\Models\Dvd;
+use App\Models\Dvd2;
 use App\Models\Rating;
 use App\Models\Sound;
 use App\Models\Label;
 use App\Models\Genre;
 use App\Models\Format;
+use App\Services\RottenTomatoes;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +33,52 @@ Route::post('/dvds', 'DvdController@insertReview');
 
 Route::get('/dvds/create', 'DvdController@create');
 
-Route::get('/dvds/{id}', 'DvdController@review');
+//Route::get('/dvds/{id}', 'DvdController@review');
+
+Route::get('/dvds/{id}', function($id){
+	$dvd = (new Dvd2())->getDvdWithId($id);
+	$reviews = (new Dvd2())->findReviews($id);
+	$foundRotten = 0;
+
+	if (!empty($dvd))
+	{
+		$rottenArray = RottenTomatoes::search($dvd->title);
+
+		if (!empty($rottenArray))
+		{
+
+			$rottenDetails = array_values($rottenArray)[0]->title;
+
+			foreach ($rottenArray as $rottenMovie)
+			{
+				if ($rottenMovie->title == $dvd->title)
+				{
+					$rottenDetails = $rottenMovie;
+					$foundRotten = 1;
+				}
+			}
+
+			return view('review', [
+					'id' => $id,
+					'dvd' => $dvd,
+					'reviews' => $reviews,
+					'rottenDetails' => $rottenDetails,
+					'foundRotten' => $foundRotten
+				]);
+
+		}
+
+		return view('review', [
+				'id' => $id,
+				'dvd' => $dvd,
+				'reviews' => $reviews,
+				'foundRotten' => $foundRotten
+			]);
+
+
+	}
+
+});
 
 Route::post('/dvds', 'DvdController@insertDvd');
 

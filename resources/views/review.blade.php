@@ -35,6 +35,13 @@
                                   <th>Sound</th>
                                   <th>Format</th>
                                   <th>Release Date</th>
+                                  @if ($foundRotten === 1)
+                                  <th>Critic Score</th>
+                                  <th>Audience Score</th>
+                                  <th>Poster</th>
+                                  <th>Runtime</th>
+                                  <th>Abridged Cast</th>
+                                  @endif
                                 </tr>
                             </thead>
 
@@ -47,6 +54,17 @@
                                   <td><?php echo $dvd->sound_name ?></td>
                                   <td><?php echo $dvd->format_name ?></td>
                                   <td><?php echo DATE_FORMAT(new DateTime($dvd->release_date), 'm-d-Y') ?></td>
+                                  @if ($foundRotten === 1)
+                                  <td><?php echo $rottenDetails->ratings->critics_score;?>%</td>
+                                  <td><?php echo $rottenDetails->ratings->audience_score;?>%</td>
+                                  <td><img src = "<?php echo $rottenDetails->posters->thumbnail;?>"></td>
+                                  <td><?php echo $rottenDetails->runtime;?></td>
+                                  <td>
+                                  	@foreach ($rottenDetails->abridged_cast as $cast)
+                                  		<?php echo $cast->name; ?><br>
+                                  	@endforeach
+                                  </td>
+                                  @endif
                                 </tr>
                             </tbody>
 
