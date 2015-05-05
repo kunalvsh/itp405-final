@@ -1,14 +1,9 @@
 <?php
 
-use App\Models\DvdE;
-use App\Models\Dvd;
-use App\Models\Dvd2;
-use App\Models\Rating;
-use App\Models\Sound;
-use App\Models\Label;
-use App\Models\Genre;
-use App\Models\Format;
-use App\Services\RottenTomatoes;
+
+use App\Models\Book;
+use App\User;
+use App\Services\GoodReads;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,81 +18,133 @@ use App\Services\RottenTomatoes;
 
 Route::get('/', 'WelcomeController@index');
 
-Route::get('home', 'HomeController@index');
+Route::get('/signup', function(){
+	return view('signup');
+});
 
-Route::get('/dvds/search', 'DvdController@search');
+Route::post('/signup', function()
+{
+  $validation = User::validate(Request::all());
 
-Route::get('/dvds', 'DvdController@results');
+  if ($validation->passes()) {
+    $user = new User();
+    $user->name = Request::input('name');
+    $user->email = Request::input('email');
+    $user->password = Hash::make(Request::input('password'));
+    $user->save();
 
-Route::post('/dvds', 'DvdController@insertReview');
+    Auth::loginUsingId($user->id);
+    return redirect('dashboard');
+  }
 
-Route::get('/dvds/create', 'DvdController@create');
+  return redirect('signup')->withErrors($validation->errors());
+});
 
-//Route::get('/dvds/{id}', 'DvdController@review');
+Route::get('/login', function() {
+	if (Auth::check())
+		return redirect('dashboard');
+	return view('login');
+});
 
-Route::get('/dvds/{id}', function($id){
-	$dvd = (new Dvd2())->getDvdWithId($id);
-	$reviews = (new Dvd2())->findReviews($id);
-	$foundRotten = 0;
+Route::post('/login', function()
+{
 
-	if (!empty($dvd))
-	{
-		$rottenArray = RottenTomatoes::search($dvd->title);
+  $validation = User::validate(Request::all());		
 
-		if (!empty($rottenArray))
+  $credentials = [
+  	'name' => Request::input('name'),
+    'email' => Request::input('email'),
+    'password' => Request::input('password')
+  ];
+
+  $remember_me = Request::input('remember_me') == 'on' ? true : false;
+
+  if (Auth::attempt($credentials, $remember_me)) {
+    return redirect('dashboard');
+  }
+
+  return redirect('login')
+      ->with('flash_error', 'Your username/password combination was incorrect.')
+      ->withInput();
+});
+
+Route::group(['middleware' => 'auth'], function(){
+
+	Route::get('/dashboard', function() {
+		return view('dashboard');
+	});
+
+	Route::get('/books', 'BookController@results');
+
+	Route::post('/books', 'BookController@insertReview');
+
+	Route::get('books/create', 'BookController@create');
+
+	Route::post('/books/create', 'BookController@insertBook');
+
+	Route::get('/books/search', 'BookController@search');
+
+	Route::get('/books/{id}', function($id){
+		$book = (new Book())->getBookWithId($id);
+		$reviews = (new Book())->findReviews($id);
+		$foundGood = 0;
+
+		if (!empty($book))
 		{
+			$grXML = GoodReads::search($book->title);
+			//dd($grXML);
+			$book_author = $grXML->search->results->work[0]->best_book->author->name;
+			$book_title = $grXML->search->results->work[0]->best_book->title;
+			$book_img = $grXML->search->results->work[0]->best_book->image_url;
+			$book_year = $grXML->search->results->work[0]->original_publication_year;
+			$book_avg_rating = $grXML->search->results->work[0]->average_rating;
 
-			$rottenDetails = array_values($rottenArray)[0]->title;
-
-			foreach ($rottenArray as $rottenMovie)
+			if (!empty($book_title))
 			{
-				if ($rottenMovie->title == $dvd->title)
-				{
-					$rottenDetails = $rottenMovie;
-					$foundRotten = 1;
-				}
+
+
+				$foundGood = 1;
+
+				return view('bookreview', [
+						'id' => $id,
+						'book' => $book,
+						'reviews' => $reviews,
+						'book_img' => $book_img,
+						'book_author' => $book_author,
+						'book_year' => $book_year,
+						'book_avg_rating' => $book_avg_rating,
+						'foundGood' => $foundGood
+					]);
+
 			}
 
-			return view('review', [
+			return view('bookreview', [
 					'id' => $id,
-					'dvd' => $dvd,
+					'book' => $book,
 					'reviews' => $reviews,
-					'rottenDetails' => $rottenDetails,
-					'foundRotten' => $foundRotten
+					'foundGood' => $foundGood
 				]);
+
 
 		}
 
-		return view('review', [
-				'id' => $id,
-				'dvd' => $dvd,
-				'reviews' => $reviews,
-				'foundRotten' => $foundRotten
-			]);
-
-
-	}
+	});
 
 });
 
-Route::post('/dvds', 'DvdController@insertDvd');
+Route::get('/logout', function()
+{
 
-Route::get('/genres/{genre_name}/dvds', function($name){
-
-	$genre = Genre::where('genre_name', '=', $name)->first()->pluck('id');
-	
-	$dvds = Dvd::with('genre', 'rating', 'label')->where('genre_id', '=', $genre)->get();
-
-	return view('genre',[
-		'dvds' => $dvds,
-		'genre_name' => $name
-	]);
+  Auth::logout();
+  return redirect('/')->with('success', 'You have succesfully logged out.');
 
 });
 
+Route::get('/about', function(){
+	return view('about');
+});
 
-
-
+Route::get('home', 'HomeController@index');
 
 Route::controllers([
 	'auth' => 'Auth\AuthController',

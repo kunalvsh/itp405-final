@@ -1,5 +1,6 @@
 <?php namespace App;
 
+use Validator;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Auth\Passwords\CanResetPassword;
@@ -30,5 +31,14 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	 * @var array
 	 */
 	protected $hidden = ['password', 'remember_token'];
+
+	public static function validate($input)
+	{
+	  return Validator::make($input, [
+	    'name' => 'required|unique:users',
+	    'password' => 'required|confirmed',
+	    'email' => 'required|email|unique:users'
+	  ]);
+	}
 
 }

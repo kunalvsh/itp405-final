@@ -2,6 +2,7 @@
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use App\User;
 
 class Authenticate {
 
@@ -40,7 +41,7 @@ class Authenticate {
 			}
 			else
 			{
-				return redirect()->guest('auth/login');
+				return redirect()->guest('/')->withErrors(array('message' => 'You must be logged in to view that page.'));
 			}
 		}
 
